@@ -102,10 +102,10 @@
 <div class="pure-g">
     @{
         <!-- #region Group Hierarchy Variables -->
-        var cGroupSeperater = '\u0000'; // This should be defined in the web.config, this is in case it is not.
-        if (ConfigurationManager.AppSettings["GroupSeperater"] != null && ConfigurationManager.AppSettings["GroupSeperater"].Length == 1)
+        var cGroupSeparater = '\u0000'; // This should be defined in the web.config, this is in case it is not.
+        if (ConfigurationManager.AppSettings["GroupSeparater"] != null && ConfigurationManager.AppSettings["GroupSeparater"].Length == 1)
         {
-            cGroupSeperater = ConfigurationManager.AppSettings["GroupSeperater"][0];
+            cGroupSeparater = ConfigurationManager.AppSettings["GroupSeparater"][0];
         }
 
         var sStartGroup = "<Div class='pure-u-1'>";
@@ -118,15 +118,15 @@
         {
             if (!string.IsNullOrEmpty(model.Key))
             {
-                if (model.Key.Contains(cGroupSeperater))
+                if (model.Key.Contains(cGroupSeparater))
                 {
                     <!-- #region Group Hierarchy Logic -->
                     var sSubGroup = string.Empty;
-                    var sParentGroup = "Root" + cGroupSeperater;
+                    var sParentGroup = "Root" + cGroupSeparater;
 
                     for (int i = 0; i < model.Key.Length; i++)
                     {
-                        if (model.Key[i] == cGroupSeperater || i == model.Key.Length - 1)
+                        if (model.Key[i] == cGroupSeparater || i == model.Key.Length - 1)
                         {
                             // This will handle the last group's final character
                             if (i == model.Key.Length - 1)
@@ -158,11 +158,11 @@
                                     </h2>
                                 </div>
                                 @Html.Raw(sStartGroup)
-                                GroupStack.Push(sParentGroup + sSubGroup + cGroupSeperater);
+                                GroupStack.Push(sParentGroup + sSubGroup + cGroupSeparater);
                             }
 
                             // Continue to build our hierarchy starting with the next subgrouping
-                            sParentGroup += sSubGroup + cGroupSeperater;
+                            sParentGroup += sSubGroup + cGroupSeparater;
                             sSubGroup = string.Empty;
                         }
                         else
