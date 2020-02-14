@@ -958,7 +958,7 @@ The regular C# string formatting rules apply: To get {} in your link you need to
     <value>URL to a CSS file to use for the site.  Site-relative (~) paths are supported.</value>
   </data>
   <data name="Repository_GroupHint" xml:space="preserve">
-    <value>A Group Hierarchy may be specified by seperating group levels with the '{0}' character. This character is customizable by your administrator.</value>
-    <comment>This character is set in the web.config file as GroupSeperater.</comment>
+    <value>A Group Hierarchy may be specified by separating group levels with the '{0}' character. This character is customizable by your administrator.</value>
+    <comment>This character is set in the web.config file as GroupSeparater.</comment>
   </data>
 </root>
