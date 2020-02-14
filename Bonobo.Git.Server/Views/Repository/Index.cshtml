@@ -1,7 +1,8 @@
-﻿@using Bonobo.Git.Server.Extensions
+ @using Bonobo.Git.Server.Extensions
 @using System.Web.Mvc.Html
 @using Bonobo.Git.Server.Models
 @using Bonobo.Git.Server.Data
+@using System.Configuration;
 
 @model Dictionary<string, RepositoryDetailModel[]>
 @{
@@ -74,7 +75,7 @@
 {
     <div class="summary-success">
         <p>@Resources.Repository_Create_Success</p>
-                <p>@Html.ActionLink(string.Format(@Resources.Repository_Create_Success_Go_To, TempData["SuccessfullyCreatedRepositoryName"].ToString()), "Detail", new { id = TempData["SuccessfullyCreatedRepositoryId"].ToString() })</p>
+        <p>@Html.ActionLink(string.Format(@Resources.Repository_Create_Success_Go_To, TempData["SuccessfullyCreatedRepositoryName"].ToString()), "Detail", new { id = TempData["SuccessfullyCreatedRepositoryId"].ToString() })</p>
     </div>
 }
 @if (TempData["CloneSuccess"] as bool? == true)
@@ -100,18 +101,86 @@
 
 <div class="pure-g">
     @{
+        <!-- #region Group Hierarchy Variables -->
+        var cGroupSeperater = '\u0000'; // This should be defined in the web.config, this is in case it is not.
+        if (ConfigurationManager.AppSettings["GroupSeperater"] != null && ConfigurationManager.AppSettings["GroupSeperater"].Length == 1)
+        {
+            cGroupSeperater = ConfigurationManager.AppSettings["GroupSeperater"][0];
+        }
+
+        var sStartGroup = "<Div class='pure-u-1'>";
+        var sEndGroup = "</Div>";
+        var GroupStack = new Stack<string>();
+        var GroupRendered = new Dictionary<string, bool>();
+        <!-- #endregion Group Hierarchy Variables -->
+
         foreach (KeyValuePair<string, RepositoryDetailModel[]> model in Model)
         {
-            bool emptyGroup = string.IsNullOrEmpty(model.Key);
-
-            if (!emptyGroup)
+            if (!string.IsNullOrEmpty(model.Key))
             {
-                <div class="pure-u-1">
-                    <h2 class="group">
-                        <span class="toggle" data-group="@(model.Key)"></span>
-                        @(model.Key)
-                    </h2>
-                </div>
+                if (model.Key.Contains(cGroupSeperater))
+                {
+                    <!-- #region Group Hierarchy Logic -->
+                    var sSubGroup = string.Empty;
+                    var sParentGroup = "Root" + cGroupSeperater;
+
+                    for (int i = 0; i < model.Key.Length; i++)
+                    {
+                        if (model.Key[i] == cGroupSeperater || i == model.Key.Length - 1)
+                        {
+                            // This will handle the last group's final character
+                            if (i == model.Key.Length - 1)
+                            {
+                                sSubGroup += model.Key[i];
+                            }
+
+                            sSubGroup = sSubGroup.Trim();
+
+                            if (!GroupRendered.Keys.Contains(sParentGroup + sSubGroup))
+                            {
+                                // Remember that we have already displayed this group level
+                                GroupRendered[sParentGroup + sSubGroup] = true;
+
+                                // Check to see if we need to close the Div of a previous group (or set of groups)
+                                if (GroupStack.Count > 0 && GroupStack.Peek() != sParentGroup)
+                                {
+                                    do
+                                    {
+                                        @Html.Raw(sEndGroup)
+                                        GroupStack.Pop();
+                                    } while (GroupStack.Count > 0 && GroupStack.Peek() != sParentGroup);
+                                }
+
+                                <div class="pure-u-1">
+                                    <h2 class="group" style="margin-left: @(25 * GroupStack.Count)px">
+                                        <span class="toggle" data-group="@(sParentGroup + sSubGroup)"></span>
+                                        @(sSubGroup)
+                                    </h2>
+                                </div>
+                                @Html.Raw(sStartGroup)
+                                GroupStack.Push(sParentGroup + sSubGroup + cGroupSeperater);
+                            }
+
+                            // Continue to build our hierarchy starting with the next subgrouping
+                            sParentGroup += sSubGroup + cGroupSeperater;
+                            sSubGroup = string.Empty;
+                        }
+                        else
+                        {
+                            sSubGroup += model.Key[i];
+                        }
+                    }
+                    <!-- #endregion Group Hierarchy Logic -->
+                }
+                else
+                {
+                    <div class="pure-u-1">
+                        <h2 class="group">
+                            <span class="toggle" data-group="@(model.Key)"></span>
+                            @(model.Key)
+                        </h2>
+                    </div>
+                }
             }
             // https://dusted.codes/making-font-awesome-awesome-using-icons-without-i-tags
             <div class="pure-u-1">
@@ -121,9 +190,9 @@
 
                     var columns = new List<WebGridColumn>();
                     columns.Add(permitted.Column(
-                        format: item => Html.Raw(item.Logo.Exists ? string.Format("<img src='data:image/png;base64,{0}' class='repo-logo' />", item.Logo.Base64Image) : ""),
-                        style: "logo"
-                    ));
+                                format: item => Html.Raw(item.Logo.Exists ? string.Format("<img src='data:image/png;base64,{0}' class='repo-logo' />", item.Logo.Base64Image) : ""),
+                                                                style: "logo"
+                                                            ));
                     columns.Add(permitted.Column("Name",
                         header: typeof(RepositoryDetailModel).GetDisplayValue("Name"),
                         format: (item) => Html.ActionLink(
@@ -148,12 +217,12 @@
                                 var anonTitle = Resources.Repository_Detail_Anonymous + ": " + (repo.AllowAnonymous ? Resources.Yes : Resources.No);
 
                                 var pushSetting = UserConfiguration.Current.AllowAnonymousPush;
-                                if(repo.AllowAnonymousPush != RepositoryPushMode.Global){
+                                if (repo.AllowAnonymousPush != RepositoryPushMode.Global){
                                     pushSetting = repo.AllowAnonymousPush == RepositoryPushMode.Yes;
                                 }
-                                
+
                                 var pushIcon = repo.AllowAnonymousPush == RepositoryPushMode.Global ? "fa-globe" : "fa-sign-in";
-                                var pushTitle = Resources.Repository_Detail_AllowAnonymousPush + ": " + (pushSetting ? Resources.Yes : Resources.No); 
+                                var pushTitle = Resources.Repository_Detail_AllowAnonymousPush + ": " + (pushSetting ? Resources.Yes : Resources.No);
                                 var pushColor = pushSetting ? "rgba(0, 120, 230, 1)" : "lightblue";
                                 var ret = Html.Raw("<span class='fa-fw'>").ToHtmlString();
                                 ret += Html.Raw("<div class='fa fa-sign-out' style='display: block; color: " + anonColor + "' title='" + anonTitle + "'></div>").ToHtmlString();
@@ -172,13 +241,22 @@
 
                     permitted.Columns(columns.ToArray());
                     @permitted.GetHtml(
-                        tableStyle: "pure-table repositories",
-                        columns: columns,
-                        htmlAttributes: new { @Id = "Repositories" }
-                        )
+                                                  tableStyle: "pure-table repositories",
+                                                  columns: columns,
+                                                  htmlAttributes: new { @Id = "Repositories" }
+                                                  )
                 }
             </div>
         }
+
+        <!-- #region Group Hierarchy Logic -->
+        // Close any open Group Divs
+        while (GroupStack.Count > 0)
+        {
+            @Html.Raw(sEndGroup)
+            GroupStack.Pop();
+        }
+        <!-- #endregion Group Hierarchy Logic -->
     }
 </div>
 
