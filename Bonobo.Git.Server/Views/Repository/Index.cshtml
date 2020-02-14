@@ -102,72 +102,63 @@
 <div class="pure-g">
     @{
         <!-- #region Group Hierarchy Variables -->
-        var cGroupSeparater = '\u0000'; // This should be defined in the web.config, this is in case it is not.
+        var groupSeparater = '\u0000'; // This should be defined in the web.config, this is in case it is not.
         if (ConfigurationManager.AppSettings["GroupSeparater"] != null && ConfigurationManager.AppSettings["GroupSeparater"].Length == 1)
         {
-            cGroupSeparater = ConfigurationManager.AppSettings["GroupSeparater"][0];
+            groupSeparater = ConfigurationManager.AppSettings["GroupSeparater"][0];
         }
 
-        var sStartGroup = "<Div class='pure-u-1'>";
-        var sEndGroup = "</Div>";
-        var GroupStack = new Stack<string>();
-        var GroupRendered = new Dictionary<string, bool>();
+        var groupStack = new Stack<string>(); // Remembers which Group parts we have rendered
         <!-- #endregion Group Hierarchy Variables -->
 
         foreach (KeyValuePair<string, RepositoryDetailModel[]> model in Model)
         {
             if (!string.IsNullOrEmpty(model.Key))
             {
-                if (model.Key.Contains(cGroupSeparater))
+                if (model.Key.Contains(groupSeparater))
                 {
                     <!-- #region Group Hierarchy Logic -->
-                    var sSubGroup = string.Empty;
-                    var sParentGroup = "Root" + cGroupSeparater;
+                    var subGroup = string.Empty;
+                    var parentGroup = "Root" + groupSeparater;
 
                     for (int i = 0; i < model.Key.Length; i++)
                     {
-                        if (model.Key[i] == cGroupSeparater || i == model.Key.Length - 1)
+                        if (model.Key[i] == groupSeparater || i == model.Key.Length - 1)
                         {
                             // This will handle the last group's final character
                             if (i == model.Key.Length - 1)
                             {
-                                sSubGroup += model.Key[i];
+                                subGroup += model.Key[i];
                             }
 
-                            sSubGroup = sSubGroup.Trim();
+                            subGroup = subGroup.Trim();
 
-                            if (!GroupRendered.Keys.Contains(sParentGroup + sSubGroup))
+                            // Display a group level only once
+                            if (!groupStack.Contains(parentGroup + subGroup + groupSeparater))
                             {
-                                // Remember that we have already displayed this group level
-                                GroupRendered[sParentGroup + sSubGroup] = true;
-
-                                // Check to see if we need to close the Div of a previous group (or set of groups)
-                                if (GroupStack.Count > 0 && GroupStack.Peek() != sParentGroup)
+                                // Close the Div of a previous group (or set of groups)
+                                while (groupStack.Count > 0 && groupStack.Peek() != parentGroup)
                                 {
-                                    do
-                                    {
-                                        @Html.Raw(sEndGroup)
-                                        GroupStack.Pop();
-                                    } while (GroupStack.Count > 0 && GroupStack.Peek() != sParentGroup);
+                                    @Html.Raw("</Div>")
+                                    groupStack.Pop();
                                 }
 
                                 <div class="pure-u-1">
-                                    <h2 class="group" style="margin-left: @(25 * GroupStack.Count)px">
-                                        <span class="toggle" data-group="@(sParentGroup + sSubGroup)"></span>
-                                        @(sSubGroup)
+                                    <h2 class="group" style="margin-left: @(25 * groupStack.Count)px">
+                                        <span class="toggle" data-group="@(parentGroup + subGroup)"></span>
+                                        @(subGroup)
                                     </h2>
                                 </div>
-                                @Html.Raw(sStartGroup)
-                                GroupStack.Push(sParentGroup + sSubGroup + cGroupSeparater);
+                                @Html.Raw("<Div class='pure-u-1'>")
+                                groupStack.Push(parentGroup + subGroup + groupSeparater);
                             }
 
-                            // Continue to build our hierarchy starting with the next subgrouping
-                            sParentGroup += sSubGroup + cGroupSeparater;
-                            sSubGroup = string.Empty;
+                            parentGroup += subGroup + groupSeparater;
+                            subGroup = string.Empty;
                         }
                         else
                         {
-                            sSubGroup += model.Key[i];
+                            subGroup += model.Key[i];
                         }
                     }
                     <!-- #endregion Group Hierarchy Logic -->
@@ -217,7 +208,8 @@
                                 var anonTitle = Resources.Repository_Detail_Anonymous + ": " + (repo.AllowAnonymous ? Resources.Yes : Resources.No);
 
                                 var pushSetting = UserConfiguration.Current.AllowAnonymousPush;
-                                if (repo.AllowAnonymousPush != RepositoryPushMode.Global){
+                                if (repo.AllowAnonymousPush != RepositoryPushMode.Global)
+                                {
                                     pushSetting = repo.AllowAnonymousPush == RepositoryPushMode.Yes;
                                 }
 
@@ -250,11 +242,10 @@
         }
 
         <!-- #region Group Hierarchy Logic -->
-        // Close any open Group Divs
-        while (GroupStack.Count > 0)
+        while (groupStack.Count > 0)
         {
-            @Html.Raw(sEndGroup)
-            GroupStack.Pop();
+            @Html.Raw("</Div>")
+            groupStack.Pop();
         }
         <!-- #endregion Group Hierarchy Logic -->
     }
