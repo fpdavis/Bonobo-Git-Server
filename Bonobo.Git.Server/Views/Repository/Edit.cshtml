@@ -42,14 +42,14 @@ else
                     @Html.LabelFor(m => m.Group)
                     @Html.TextBoxFor(m => m.Group, new { @class = "medium" })
                     @{
-                        var cGroupSeparater = '\u0000'; // This should be defined in the web.config, this is in case it is not.
+                        var groupSeparater = '\u0000'; // This should be defined in the web.config
 
                         if (ConfigurationManager.AppSettings["GroupSeparater"] != null && ConfigurationManager.AppSettings["GroupSeparater"].Length == 1)
                         {
-                            cGroupSeparater = ConfigurationManager.AppSettings["GroupSeparater"][0];
+                            groupSeparater = ConfigurationManager.AppSettings["GroupSeparater"][0];
                         }
 
-                        <i class="fa fa-info-circle" title="@string.Format(Resources.Repository_GroupHint, cGroupSeparater)"></i>
+                        <i class="fa fa-info-circle" title="@string.Format(Resources.Repository_GroupHint, groupSeparater)"></i>
                     }
                 </div>
                 <div class="pure-control-group">
